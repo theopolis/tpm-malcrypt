@@ -9,7 +9,11 @@
 
 #include <stdio.h>
 #include <tchar.h>
+#include <new>
+#include <windows.h>
+#include <IntSafe.h>
+#include <Strsafe.h>
 
-
-
-// TODO: reference additional headers your program requires here
+#include "tlcl.h"
+#include "inlinefuncs.h"
+#include "utils.h"

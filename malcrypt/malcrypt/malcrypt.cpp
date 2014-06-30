@@ -6,6 +6,11 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	return 0;
+	HRESULT status;
+	PCWSTR keyName = L"MalcryptKey0";
+
+	status = TlclCreateKey(keyName);
+	status = TlclGetPubKey(keyName);
+	status = TlclDeleteKey(keyName);
 }
 

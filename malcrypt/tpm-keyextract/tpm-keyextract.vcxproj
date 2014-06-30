@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{65B31B4F-71D9-485C-BDA9-F4D6D8C34918}</ProjectGuid>
+    <ProjectGuid>{929CA768-CBD5-497C-912F-D8F476818815}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>tpmkeyextract</RootNamespace>
   </PropertyGroup>
@@ -79,17 +79,22 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="keyextract.h" />
-    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="..\malcrypt\stdafx.h" />
+    <ClInclude Include="..\malcrypt\tlcl.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\malcrypt\tlcl.cpp" />
+    <ClCompile Include="..\malcrypt\utils.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="tlcl.cpp" />
     <ClCompile Include="keyextract.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="tpm-keyextract.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

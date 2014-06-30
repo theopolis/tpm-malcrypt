@@ -1,6 +1,10 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*.opensdf
+*.suo
+Debug
+ipch
 
 # C extensions
 *.so
