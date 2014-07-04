@@ -5,6 +5,9 @@
 
 #pragma once
 
+/* Enable stdout debugging :) */
+//#define DEBUG
+
 #include "targetver.h"
 
 #include <stdio.h>

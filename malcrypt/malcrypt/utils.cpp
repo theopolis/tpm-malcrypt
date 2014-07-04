@@ -116,7 +116,7 @@ PcpToolWriteFile(
 	HANDLE hFile = INVALID_HANDLE_VALUE;
 	DWORD bytesWritten = 0;
 
-	hFile = CreateFileW(
+	hFile = CreateFile(
 		lpFileName,
 		GENERIC_WRITE,
 		0,
@@ -167,6 +167,11 @@ PcpToolDisplayKey(
 	BCRYPT_RSAKEY_BLOB* pKey = (BCRYPT_RSAKEY_BLOB*)pbKey;
 	BYTE pubKeyDigest[20] = { 0 };
 	UINT32 cbRequired = 0;
+
+#ifndef DEBUG
+	/* No ouput text when not debugging. */
+	return hr;
+#endif
 
 	// Parameter check
 	if ((pbKey == NULL) ||
