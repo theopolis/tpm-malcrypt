@@ -17,8 +17,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	/* Output the public key (to exfiltrate). */
 	status = TlclGetPubKey(keyName, &pubKeySize, &pubKeyData);
+
+	/* Send over C&C. */
+
 	if (!FAILED(status)) {
 		ZeroAndFree((PVOID*)&pubKeyData, pubKeySize);
+		pubKeySize = 0;
 	}
 
 	return status;

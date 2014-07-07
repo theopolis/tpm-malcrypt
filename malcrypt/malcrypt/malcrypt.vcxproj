@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inlinefuncs.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="tlcl.h" />
@@ -94,6 +95,9 @@
     </ClCompile>
     <ClCompile Include="tlcl.cpp" />
     <ClCompile Include="utils.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="malcrypt.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

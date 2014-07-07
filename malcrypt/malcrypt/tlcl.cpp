@@ -323,39 +323,12 @@ TlclDecrypt(
 	_In_ PBYTE encData,
 	_Out_ PUINT32 decDataSize,
 	_Out_ PBYTE *decData,
-	_In_opt_ PCWSTR keyAuthValue = NULL)
+	_In_opt_ PCWSTR keyAuthValue)
 {
 	HRESULT hr = S_OK;
 	NCRYPT_PROV_HANDLE hProv = NULL;
 	NCRYPT_KEY_HANDLE hKey = NULL;
-	//PBYTE pbBlob = NULL;
-	//UINT32 cbBlob = 0;
-	//PBYTE pbSecret = NULL;
 	UINT32 cbSecret = 0;
-
-	// Read in encyprted data
-	/*
-	if (FAILED(hr = PcpToolReadFile(
-		blobFile,
-		NULL,
-		0,
-		&cbBlob)))
-	{
-		goto Cleanup;
-	}
-	if (FAILED(hr = AllocateAndZero((PVOID*)&pbBlob, cbBlob)))
-	{
-		goto Cleanup;
-	}
-	if (FAILED(hr = PcpToolReadFile(
-		blobFile,
-		pbBlob,
-		cbBlob,
-		&cbBlob)))
-	{
-		goto Cleanup;
-	}
-	*/
 
 	// Open key
 	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptOpenStorageProvider(
@@ -418,8 +391,6 @@ TlclDecrypt(
 		goto Cleanup;
 	}
 
-	// Output secret
-	//wprintf(L"<Secret size=\"%u\">%s</Secret>\n", cbSecret, (PWCHAR)pbSecret);
 	*decDataSize = cbSecret;
 
 Cleanup:

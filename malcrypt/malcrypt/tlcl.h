@@ -50,7 +50,7 @@ TlclDecrypt(
 	_In_ PCWSTR keyName,
 	_In_ UINT32 encDataSize,
 	_In_ PBYTE encData,
-	_Out_ PUINT32 *decDataSize,
+	_Out_ PUINT32 decDataSize,
 	_Out_ PBYTE *decData,
 	_In_opt_ PCWSTR keyAuthValue = NULL
 );
