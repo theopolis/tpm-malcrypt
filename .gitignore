@@ -5,6 +5,7 @@ __pycache__/
 *.suo
 Debug
 ipch
+*.sdf
 
 # C extensions
 *.so
