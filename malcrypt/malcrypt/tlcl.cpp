@@ -249,13 +249,14 @@ Cleanup:
 
 HRESULT
 TlclGetPubKey(
-	PCWSTR keyName,
-	PCWSTR keyFile /* Optional */)
+	_In_ PCWSTR lpKeyName,
+	_Out_ PUINT32 pcbPubKey,
+	_Out_ PBYTE *pbPubKey)
 {
 	HRESULT hr = S_OK;
 	NCRYPT_PROV_HANDLE hProv = NULL;
 	NCRYPT_KEY_HANDLE hKey = NULL;
-	BYTE pbPubKey[1024] = { 0 };
+	//BYTE pbPubKey[1024] = { 0 };
 	DWORD cbPubKey = 0;
 
 	// Open key
@@ -270,9 +271,16 @@ TlclGetPubKey(
 	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptOpenKey(
 		hProv,
 		&hKey,
-		keyName,
+		lpKeyName,
 		0,
 		0))))
+	{
+		goto Cleanup;
+	}
+
+	/* Create output pointer/memory. */
+	*pcbPubKey = 0;
+	if (FAILED(hr = AllocateAndZero((PVOID*) *pbPubKey, 1024)))
 	{
 		goto Cleanup;
 	}
@@ -283,28 +291,16 @@ TlclGetPubKey(
 		NULL,
 		BCRYPT_RSAPUBLIC_BLOB,
 		NULL,
-		pbPubKey,
-		sizeof(pbPubKey),
+		*pbPubKey,
+		1024,
 		&cbPubKey,
 		0))))
 	{
 		goto Cleanup;
 	}
 
-	// Export key
-	if (keyFile != NULL)
-	{
-		if (FAILED(hr = PcpToolWriteFile(keyFile, pbPubKey, cbPubKey)))
-		{
-			goto Cleanup;
-		}
-	}
-
-	// Output results
-	if (FAILED(hr = PcpToolDisplayKey(keyName, pbPubKey, cbPubKey, 0)))
-	{
-		goto Cleanup;
-	}
+	/* Set size of key (helpful for caller). */
+	*pcbPubKey = 1024;
 
 Cleanup:
 	if (hKey != NULL)
@@ -317,5 +313,248 @@ Cleanup:
 		NCryptFreeObject(hProv);
 		hProv = NULL;
 	}
+	return hr;
+}
+
+HRESULT
+TlclDecrypt(
+	_In_ PCWSTR keyName,
+	_In_ UINT32 encDataSize,
+	_In_ PBYTE encData,
+	_Out_ PUINT32 decDataSize,
+	_Out_ PBYTE *decData,
+	_In_opt_ PCWSTR keyAuthValue = NULL)
+{
+	HRESULT hr = S_OK;
+	NCRYPT_PROV_HANDLE hProv = NULL;
+	NCRYPT_KEY_HANDLE hKey = NULL;
+	//PBYTE pbBlob = NULL;
+	//UINT32 cbBlob = 0;
+	//PBYTE pbSecret = NULL;
+	UINT32 cbSecret = 0;
+
+	// Read in encyprted data
+	/*
+	if (FAILED(hr = PcpToolReadFile(
+		blobFile,
+		NULL,
+		0,
+		&cbBlob)))
+	{
+		goto Cleanup;
+	}
+	if (FAILED(hr = AllocateAndZero((PVOID*)&pbBlob, cbBlob)))
+	{
+		goto Cleanup;
+	}
+	if (FAILED(hr = PcpToolReadFile(
+		blobFile,
+		pbBlob,
+		cbBlob,
+		&cbBlob)))
+	{
+		goto Cleanup;
+	}
+	*/
+
+	// Open key
+	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptOpenStorageProvider(
+		&hProv,
+		MS_PLATFORM_CRYPTO_PROVIDER,
+		0))))
+	{
+		goto Cleanup;
+	}
+	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptOpenKey(
+		hProv,
+		&hKey,
+		keyName,
+		0,
+		(keyAuthValue != 0) ? NCRYPT_SILENT_FLAG : 0))))
+	{
+		goto Cleanup;
+	}
+	if ((keyAuthValue != NULL) && (wcslen(keyAuthValue) != 0))
+	{
+		if (FAILED(hr = HRESULT_FROM_WIN32(NCryptSetProperty(
+			hKey,
+			NCRYPT_PIN_PROPERTY,
+			(PBYTE)keyAuthValue,
+			(DWORD)((wcslen(keyAuthValue) + 1) * sizeof(WCHAR)),
+			0))))
+		{
+			goto Cleanup;
+		}
+	}
+
+	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptDecrypt(
+		hKey,
+		encData,
+		encDataSize,
+		NULL,
+		NULL,
+		0,
+		(PDWORD) &cbSecret,
+		BCRYPT_PAD_PKCS1))))
+	{
+		goto Cleanup;
+	}
+
+	*decDataSize = 0;
+	if (FAILED(hr = AllocateAndZero((PVOID*) *decData, cbSecret)))
+	{
+		goto Cleanup;
+	}
+	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptDecrypt(
+		hKey,
+		encData,
+		encDataSize,
+		NULL,
+		*decData,
+		cbSecret,
+		(PDWORD)&cbSecret,
+		BCRYPT_PAD_PKCS1))))
+	{
+		goto Cleanup;
+	}
+
+	// Output secret
+	//wprintf(L"<Secret size=\"%u\">%s</Secret>\n", cbSecret, (PWCHAR)pbSecret);
+	*decDataSize = cbSecret;
+
+Cleanup:
+	if (hKey != NULL)
+	{
+		NCryptFreeObject(hKey);
+		hKey = NULL;
+	}
+	if (hProv != NULL)
+	{
+		NCryptFreeObject(hProv);
+		hProv = NULL;
+	}
+	//ZeroAndFree((PVOID*)&pbBlob, cbBlob);
+	//ZeroAndFree((PVOID*)&pbSecret, cbSecret);
+	//PcpToolCallResult(L"PcpToolDecrypt()", hr);
+	return hr;
+}
+
+HRESULT
+TlclEncrypt(
+	PCWSTR keyFile,
+	PCWSTR decData,
+	PCWSTR blobFile /* Optional write output */
+)
+{
+	HRESULT hr = S_OK;
+	BCRYPT_ALG_HANDLE hAlg = NULL;
+	BCRYPT_KEY_HANDLE hKey = NULL;
+	UINT32 cbPubkey = 0;
+	PBYTE pbPubkey = NULL;
+	UINT32 cbBlob = 0;
+	PBYTE pbBlob = NULL;
+
+	if (FAILED(hr = PcpToolReadFile(keyFile, NULL, 0, &cbPubkey)))
+	{
+		goto Cleanup;
+	}
+	if (FAILED(hr = AllocateAndZero((PVOID*)&pbPubkey, cbPubkey)))
+	{
+		goto Cleanup;
+	}
+	if (FAILED(hr = PcpToolReadFile(
+		keyFile,
+		pbPubkey,
+		cbPubkey,
+		&cbPubkey)))
+	{
+		goto Cleanup;
+	}
+
+	// Open the key
+	if (FAILED(hr = HRESULT_FROM_NT(BCryptOpenAlgorithmProvider(
+		&hAlg,
+		BCRYPT_RSA_ALGORITHM,
+		MS_PRIMITIVE_PROVIDER,
+		0))))
+	{
+		goto Cleanup;
+	}
+
+	if (FAILED(hr = HRESULT_FROM_NT(BCryptImportKeyPair(
+		hAlg,
+		NULL,
+		BCRYPT_RSAPUBLIC_BLOB,
+		&hKey,
+		pbPubkey,
+		cbPubkey,
+		0))))
+	{
+		goto Cleanup;
+	}
+
+	if (FAILED(hr = HRESULT_FROM_NT(BCryptEncrypt(
+		hKey,
+		(PBYTE)decData,
+		(DWORD)((wcslen(decData) + 1) * sizeof(WCHAR)),
+		NULL,
+		NULL,
+		0,
+		NULL,
+		0,
+		(PULONG)&cbBlob,
+		BCRYPT_PAD_PKCS1))))
+	{
+		goto Cleanup;
+	}
+	if (FAILED(hr = AllocateAndZero((PVOID*)&pbBlob, cbBlob)))
+	{
+		goto Cleanup;
+	}
+	if (FAILED(hr = HRESULT_FROM_NT(BCryptEncrypt(
+		hKey,
+		(PBYTE)decData,
+		(DWORD)((wcslen(decData) + 1) * sizeof(WCHAR)),
+		NULL,
+		NULL,
+		0,
+		pbBlob,
+		cbBlob,
+		(PULONG)&cbBlob,
+		BCRYPT_PAD_PKCS1))))
+	{
+		goto Cleanup;
+	}
+
+	if (blobFile != NULL)
+	{
+		if (FAILED(hr = PcpToolWriteFile(blobFile, pbBlob, cbBlob)))
+		{
+			goto Cleanup;
+		}
+	}
+
+	// Output the result
+	wprintf(L"<Blob size=\"%u\">\n  ", cbBlob);
+	for (UINT32 n = 0; n < cbBlob; n++)
+	{
+		wprintf(L"%02x", pbBlob[n]);
+	}
+	wprintf(L"\n</Blob>\n");
+
+Cleanup:
+	if (hKey != NULL)
+	{
+		BCryptDestroyKey(hKey);
+		hKey = NULL;
+	}
+	if (hAlg != NULL)
+	{
+		BCryptCloseAlgorithmProvider(hAlg, 0);
+		hAlg = NULL;
+	}
+	ZeroAndFree((PVOID*)&pbBlob, cbBlob);
+	ZeroAndFree((PVOID*)&pbPubkey, cbPubkey);
+	//PcpToolCallResult(L"PcpToolEncrypt()", hr);
 	return hr;
 }

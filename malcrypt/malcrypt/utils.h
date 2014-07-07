@@ -18,20 +18,23 @@ PcpToolReadFile(
 	_In_ PCWSTR lpFileName,
 	_In_reads_opt_(cbData) PBYTE pbData,
 	UINT32 cbData,
-	__out PUINT32 pcbData);
+	__out PUINT32 pcbData
+);
 
 HRESULT
 PcpToolWriteFile(
 	_In_ PCWSTR lpFileName,
 	_In_reads_opt_(cbData) PBYTE pbData,
-	UINT32 cbData);
+	UINT32 cbData
+);
 
 HRESULT
 PcpToolDisplayKey(
 	_In_ PCWSTR lpKeyName,
 	_In_reads_(cbKey) PBYTE pbKey,
 	DWORD cbKey,
-	UINT32 level);
+	UINT32 level
+);
 
 HRESULT
 TpmAttiShaHash(
@@ -42,4 +45,5 @@ TpmAttiShaHash(
 	UINT32 cbData,
 	_Out_writes_to_opt_(cbResult, *pcbResult) PBYTE pbResult,
 	UINT32 cbResult,
-	_Out_ PUINT32 pcbResult);
+	_Out_ PUINT32 pcbResult
+);
