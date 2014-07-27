@@ -38,10 +38,8 @@ TlclCreateKey(
 
 
 	// Optional parameter: usageAuth
-	if (usageAuth != NULL && wcslen(usageAuth) != 0)
-	{
-		if (!wcscmp(usageAuth, L"@"))
-		{
+	if (usageAuth != NULL && wcslen(usageAuth) != 0) {
+		if (!wcscmp(usageAuth, L"@")) {
 			// Caller requested UI
 			usageAuth = NULL;
 			tUIRequested = TRUE;
@@ -49,8 +47,7 @@ TlclCreateKey(
 			rgbUiPolicy.dwFlags = NCRYPT_UI_PROTECT_KEY_FLAG;
 			rgbUiPolicy.pszDescription = optionalPIN;
 		}
-		else if (!wcscmp(usageAuth, L"!"))
-		{
+		else if (!wcscmp(usageAuth, L"!")) {
 			// Caller requested UI
 			usageAuth = NULL;
 			tUIRequested = TRUE;
@@ -61,26 +58,18 @@ TlclCreateKey(
 	}
 
 	// Optional parameter: pcrTable
-	if (pcrsName != NULL && wcslen(usageAuth) != 0)
-	{
-		if (FAILED(hr = PcpToolReadFile(
-			pcrsName,
-			NULL,
-			0,
-			&cbPcrTable)))
-		{
+	if (pcrsName != NULL && wcslen(usageAuth) != 0) {
+		if (FAILED(hr = PcpToolReadFile(pcrsName, NULL, 0, &cbPcrTable))) {
 			goto Cleanup;
 		}
-		if (FAILED(hr = AllocateAndZero((PVOID*)&pbPcrTable, cbPcrTable)))
-		{
+		if (FAILED(hr = AllocateAndZero((PVOID*)&pbPcrTable, cbPcrTable))) {
 			goto Cleanup;
 		}
 		if (FAILED(hr = PcpToolReadFile(
 			pcrsName,
 			pbPcrTable,
 			cbPcrTable,
-			&cbPcrTable)))
-		{
+			&cbPcrTable))) {
 			goto Cleanup;
 		}
 	}
@@ -89,8 +78,7 @@ TlclCreateKey(
 	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptOpenStorageProvider(
 		&hProv,
 		MS_PLATFORM_CRYPTO_PROVIDER,
-		0))))
-	{
+		0)))) {
 		goto Cleanup;
 	}
 
@@ -100,67 +88,56 @@ TlclCreateKey(
 		BCRYPT_RSA_ALGORITHM,
 		keyName,
 		0,
-		NCRYPT_OVERWRITE_KEY_FLAG))))
-	{
+		NCRYPT_OVERWRITE_KEY_FLAG)))) {
 		goto Cleanup;
 	}
 
-	if (tUIRequested == FALSE)
-	{
-		if ((usageAuth != NULL) && (wcslen(usageAuth) != 0))
-		{
+	if (tUIRequested == FALSE) {
+		if ((usageAuth != NULL) && (wcslen(usageAuth) != 0)) {
 			if (FAILED(hr = HRESULT_FROM_WIN32(NCryptSetProperty(
 				hKey,
 				NCRYPT_PIN_PROPERTY,
 				(PBYTE)usageAuth,
 				(DWORD)((wcslen(usageAuth) + 1) * sizeof(WCHAR)),
-				0))))
-			{
+				0)))) {
 				goto Cleanup;
 			}
 		}
 	}
-	else
-	{
+	else {
 		if (FAILED(hr = HRESULT_FROM_WIN32(NCryptSetProperty(
 			hKey,
 			NCRYPT_UI_POLICY_PROPERTY,
 			(PBYTE)&rgbUiPolicy,
 			sizeof(NCRYPT_UI_POLICY),
-			0))))
-		{
+			0)))) {
 			goto Cleanup;
 		}
 	}
 
 	// Optional pcrMask (bind to the selected PCRs)
-	if (pcrMask != 0)
-	{
+	if (pcrMask != 0) {
 		if (FAILED(hr = HRESULT_FROM_WIN32(NCryptSetProperty(
 			hKey,
 			NCRYPT_PCP_PLATFORM_BINDING_PCRMASK_PROPERTY,
 			(PBYTE)&pcrMask,
 			0x00000003,
-			0))))
-		{
+			0)))) {
 			goto Cleanup;
 		}
-		if ((pbPcrTable != NULL) && (cbPcrTable == (24 * 20)))
-		{
+		if ((pbPcrTable != NULL) && (cbPcrTable == (24 * 20))) {
 			if (FAILED(hr = HRESULT_FROM_WIN32(NCryptSetProperty(
 				hKey,
 				NCRYPT_PCP_PLATFORM_BINDING_PCRDIGESTLIST_PROPERTY,
 				pbPcrTable,
 				cbPcrTable,
-				0))))
-			{
+				0)))) {
 				goto Cleanup;
 			}
 		}
 	}
 
-	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptFinalizeKey(hKey, 0))))
-	{
+	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptFinalizeKey(hKey, 0)))) {
 		goto Cleanup;
 	}
 
@@ -171,25 +148,21 @@ TlclCreateKey(
 		pbKeyPub,
 		sizeof(pbKeyPub),
 		&cbKeyPub,
-		0))))
-	{
+		0)))) {
 		goto Cleanup;
 	}
 
 	// Output results
-	if (FAILED(hr = PcpToolDisplayKey(keyName, pbKeyPub, cbKeyPub, 0)))
-	{
+	if (FAILED(hr = PcpToolDisplayKey(keyName, pbKeyPub, cbKeyPub, 0))) {
 		goto Cleanup;
 	}
 
 Cleanup:
-	if (hKey != NULL)
-	{
+	if (hKey != NULL) {
 		NCryptFreeObject(hKey);
 		hKey = NULL;
 	}
-	if (hProv != NULL)
-	{
+	if (hProv != NULL) {
 		NCryptFreeObject(hProv);
 		hProv = NULL;
 	}
@@ -209,8 +182,7 @@ TlclDeleteKey(
 	if (FAILED(hr = (NCryptOpenStorageProvider(
 		&hProv,
 		MS_PLATFORM_CRYPTO_PROVIDER,
-		0))))
-	{
+		0)))) {
 		goto Cleanup;
 	}
 
@@ -219,14 +191,12 @@ TlclDeleteKey(
 		&hKey,
 		keyName,
 		0,
-		0))))
-	{
+		0)))) {
 		goto Cleanup;
 	}
 
 	// Delete the key
-	if (FAILED(hr = (NCryptDeleteKey(hKey, 0))))
-	{
+	if (FAILED(hr = (NCryptDeleteKey(hKey, 0)))) {
 		goto Cleanup;
 	}
 	hKey = NULL;
@@ -234,13 +204,11 @@ TlclDeleteKey(
 	wprintf(L"Ok.\n");
 
 Cleanup:
-	if (hKey != NULL)
-	{
+	if (hKey != NULL) {
 		NCryptFreeObject(hKey);
 		hKey = NULL;
 	}
-	if (hProv != NULL)
-	{
+	if (hProv != NULL) {
 		NCryptFreeObject(hProv);
 		hProv = NULL;
 	}
@@ -263,25 +231,21 @@ TlclGetPubKey(
 	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptOpenStorageProvider(
 		&hProv,
 		MS_PLATFORM_CRYPTO_PROVIDER,
-		0))))
-	{
+		0)))) {
 		goto Cleanup;
 	}
 
-	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptOpenKey(
-		hProv,
-		&hKey,
-		lpKeyName,
-		0,
-		0))))
-	{
+	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptOpenKey(hProv, 
+		&hKey, 
+		lpKeyName, 
+		0, 
+		0)))) {
 		goto Cleanup;
 	}
 
 	/* Create output pointer/memory. */
 	*pcbPubKey = 0;
-	if (FAILED(hr = AllocateAndZero((PVOID*) *pbPubKey, 1024)))
-	{
+	if (FAILED(hr = AllocateAndZero((PVOID *) pbPubKey, 1024))) {
 		goto Cleanup;
 	}
 
@@ -294,8 +258,7 @@ TlclGetPubKey(
 		*pbPubKey,
 		1024,
 		&cbPubKey,
-		0))))
-	{
+		0)))) {
 		goto Cleanup;
 	}
 
@@ -303,13 +266,11 @@ TlclGetPubKey(
 	*pcbPubKey = 1024;
 
 Cleanup:
-	if (hKey != NULL)
-	{
+	if (hKey != NULL) {
 		NCryptFreeObject(hKey);
 		hKey = NULL;
 	}
-	if (hProv != NULL)
-	{
+	if (hProv != NULL) {
 		NCryptFreeObject(hProv);
 		hProv = NULL;
 	}
@@ -334,8 +295,7 @@ TlclDecrypt(
 	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptOpenStorageProvider(
 		&hProv,
 		MS_PLATFORM_CRYPTO_PROVIDER,
-		0))))
-	{
+		0)))) {
 		goto Cleanup;
 	}
 	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptOpenKey(
@@ -343,19 +303,17 @@ TlclDecrypt(
 		&hKey,
 		keyName,
 		0,
-		(keyAuthValue != 0) ? NCRYPT_SILENT_FLAG : 0))))
-	{
+		(keyAuthValue != 0) ? NCRYPT_SILENT_FLAG : 0)))) {
 		goto Cleanup;
 	}
-	if ((keyAuthValue != NULL) && (wcslen(keyAuthValue) != 0))
-	{
+
+	if ((keyAuthValue != NULL) && (wcslen(keyAuthValue) != 0)) {
 		if (FAILED(hr = HRESULT_FROM_WIN32(NCryptSetProperty(
 			hKey,
 			NCRYPT_PIN_PROPERTY,
 			(PBYTE)keyAuthValue,
 			(DWORD)((wcslen(keyAuthValue) + 1) * sizeof(WCHAR)),
-			0))))
-		{
+			0)))) {
 			goto Cleanup;
 		}
 	}
@@ -368,14 +326,12 @@ TlclDecrypt(
 		NULL,
 		0,
 		(PDWORD) &cbSecret,
-		BCRYPT_PAD_PKCS1))))
-	{
+		NCRYPT_PAD_PKCS1_FLAG)))) {
 		goto Cleanup;
 	}
 
 	*decDataSize = 0;
-	if (FAILED(hr = AllocateAndZero((PVOID*) *decData, cbSecret)))
-	{
+	if (FAILED(hr = AllocateAndZero((PVOID*) decData, cbSecret))) {
 		goto Cleanup;
 	}
 	if (FAILED(hr = HRESULT_FROM_WIN32(NCryptDecrypt(
@@ -386,27 +342,22 @@ TlclDecrypt(
 		*decData,
 		cbSecret,
 		(PDWORD)&cbSecret,
-		BCRYPT_PAD_PKCS1))))
-	{
+		BCRYPT_PAD_PKCS1)))) {
 		goto Cleanup;
 	}
 
 	*decDataSize = cbSecret;
 
 Cleanup:
-	if (hKey != NULL)
-	{
+	if (hKey != NULL) {
 		NCryptFreeObject(hKey);
 		hKey = NULL;
 	}
-	if (hProv != NULL)
-	{
+	if (hProv != NULL) {
 		NCryptFreeObject(hProv);
 		hProv = NULL;
 	}
-	//ZeroAndFree((PVOID*)&pbBlob, cbBlob);
-	//ZeroAndFree((PVOID*)&pbSecret, cbSecret);
-	//PcpToolCallResult(L"PcpToolDecrypt()", hr);
+
 	return hr;
 }
 
@@ -415,8 +366,7 @@ TlclEncrypt(
 	PCWSTR keyFile,
 	PCWSTR decData,
 	PCWSTR blobFile /* Optional write output */
-)
-{
+) {
 	HRESULT hr = S_OK;
 	BCRYPT_ALG_HANDLE hAlg = NULL;
 	BCRYPT_KEY_HANDLE hKey = NULL;
@@ -425,20 +375,13 @@ TlclEncrypt(
 	UINT32 cbBlob = 0;
 	PBYTE pbBlob = NULL;
 
-	if (FAILED(hr = PcpToolReadFile(keyFile, NULL, 0, &cbPubkey)))
-	{
+	if (FAILED(hr = PcpToolReadFile(keyFile, NULL, 0, &cbPubkey))) {
 		goto Cleanup;
 	}
-	if (FAILED(hr = AllocateAndZero((PVOID*)&pbPubkey, cbPubkey)))
-	{
+	if (FAILED(hr = AllocateAndZero((PVOID*)&pbPubkey, cbPubkey))) {
 		goto Cleanup;
 	}
-	if (FAILED(hr = PcpToolReadFile(
-		keyFile,
-		pbPubkey,
-		cbPubkey,
-		&cbPubkey)))
-	{
+	if (FAILED(hr = PcpToolReadFile(keyFile, pbPubkey, cbPubkey, &cbPubkey))) {
 		goto Cleanup;
 	}
 
@@ -447,8 +390,7 @@ TlclEncrypt(
 		&hAlg,
 		BCRYPT_RSA_ALGORITHM,
 		MS_PRIMITIVE_PROVIDER,
-		0))))
-	{
+		0)))) {
 		goto Cleanup;
 	}
 
@@ -459,8 +401,7 @@ TlclEncrypt(
 		&hKey,
 		pbPubkey,
 		cbPubkey,
-		0))))
-	{
+		0)))) {
 		goto Cleanup;
 	}
 
@@ -474,12 +415,10 @@ TlclEncrypt(
 		NULL,
 		0,
 		(PULONG)&cbBlob,
-		BCRYPT_PAD_PKCS1))))
-	{
+		BCRYPT_PAD_PKCS1)))) {
 		goto Cleanup;
 	}
-	if (FAILED(hr = AllocateAndZero((PVOID*)&pbBlob, cbBlob)))
-	{
+	if (FAILED(hr = AllocateAndZero((PVOID*)&pbBlob, cbBlob))) {
 		goto Cleanup;
 	}
 	if (FAILED(hr = HRESULT_FROM_NT(BCryptEncrypt(
@@ -492,40 +431,27 @@ TlclEncrypt(
 		pbBlob,
 		cbBlob,
 		(PULONG)&cbBlob,
-		BCRYPT_PAD_PKCS1))))
-	{
+		BCRYPT_PAD_PKCS1)))) {
 		goto Cleanup;
 	}
 
-	if (blobFile != NULL)
-	{
-		if (FAILED(hr = PcpToolWriteFile(blobFile, pbBlob, cbBlob)))
-		{
+	if (blobFile != NULL) {
+		if (FAILED(hr = PcpToolWriteFile(blobFile, pbBlob, cbBlob))) {
 			goto Cleanup;
 		}
 	}
 
-	// Output the result
-	wprintf(L"<Blob size=\"%u\">\n  ", cbBlob);
-	for (UINT32 n = 0; n < cbBlob; n++)
-	{
-		wprintf(L"%02x", pbBlob[n]);
-	}
-	wprintf(L"\n</Blob>\n");
-
 Cleanup:
-	if (hKey != NULL)
-	{
+	if (hKey != NULL) {
 		BCryptDestroyKey(hKey);
 		hKey = NULL;
 	}
-	if (hAlg != NULL)
-	{
+	if (hAlg != NULL) {
 		BCryptCloseAlgorithmProvider(hAlg, 0);
 		hAlg = NULL;
 	}
 	ZeroAndFree((PVOID*)&pbBlob, cbBlob);
 	ZeroAndFree((PVOID*)&pbPubkey, cbPubkey);
-	//PcpToolCallResult(L"PcpToolEncrypt()", hr);
+
 	return hr;
 }

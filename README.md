@@ -3,14 +3,26 @@ tpm-malcrypt
 
 An example malicious payload controller and obfuscator assisted by TPM-protected keys.
 
-tpm-keyextract
---------------
+malcrypter
+----------
+
+This is the offline (server-side) component that generates the executed payload from the 
+decrypter stub and your choice of encrypted payload.
+
+*Installation:*
+1. Grab PyDbg from: http://www.lfd.uci.edu/~gohlke/pythonlibs/
+2. Within CMD: `SET VS90COMNTOOLS=%VS120COMNTOOLS%`
+3. `pip install pefile pycrypto`
+
+malcrypt
+--------
+
+*tpm-keyextract*
 
 Detect a TPM on a client and create a new encryption keypair using standard protections.
 Return the public key component to be transmitted back to a encrypted PE generator.
 
-malcrypt
---------
+*malcrypt*
 
 Using an input public key and input malicious payload, generate and return a self-decrypting
 PE that decrypts and executes in-memory.

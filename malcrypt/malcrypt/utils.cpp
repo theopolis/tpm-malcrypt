@@ -296,6 +296,57 @@ Cleanup:
 	return hr;
 }
 
+HRESULT
+DerEncodeKey(
+	_In_ UINT32 cbRsaKeySize,
+	_In_ PBYTE pbRsaKeyData,
+	_Out_ PUINT32 pcbDerKeySize,
+	_Out_ PBYTE *pbDerKeyData
+) {
+
+	BOOL result = true;
+
+	/* The blob contain the modulus/keystruct/and data. */
+	PBYTE keyBlob;
+	BLOBHEADER *keyHeader;
+
+	*pcbDerKeySize = 0;
+	AllocateAndZero((PVOID *) &keyBlob, sizeof(BLOBHEADER) + cbRsaKeySize);
+	keyHeader = (BLOBHEADER *)keyBlob;
+
+	keyHeader->bType = PUBLICKEYBLOB;
+	keyHeader->bVersion = CUR_BLOB_VERSION;
+	keyHeader->reserved = 0;
+	keyHeader->aiKeyAlg = CALG_RSA_KEYX;
+
+	memcpy(keyBlob + sizeof(BLOBHEADER), pbRsaKeyData, cbRsaKeySize);
+
+	result= CryptEncodeObject(
+		X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+		RSA_CSP_PUBLICKEYBLOB,
+		keyBlob,
+		NULL,
+		(DWORD *)pcbDerKeySize);
+
+	if (!result) {
+		return S_FALSE;
+	}
+
+	AllocateAndZero((PVOID *)pbDerKeyData, *pcbDerKeySize);
+	result = CryptEncodeObject(
+		X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+		RSA_CSP_PUBLICKEYBLOB,
+		keyBlob,
+		*pbDerKeyData,
+		(DWORD *)pcbDerKeySize);
+
+	if (!result) {
+		return S_FALSE;
+	}
+
+	return S_OK;
+}
+
 // Global hash handles are kept open for performance reasons
 BCRYPT_ALG_HANDLE g_hSHA1HashAlg = NULL;
 BCRYPT_ALG_HANDLE g_hSHA1HmacAlg = NULL;

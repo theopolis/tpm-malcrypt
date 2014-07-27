@@ -54,3 +54,10 @@ TlclDecrypt(
 	_Out_ PBYTE *decData,
 	_In_opt_ PCWSTR keyAuthValue = NULL
 );
+
+HRESULT
+TlclEncrypt(
+	PCWSTR keyFile,
+	PCWSTR decData,
+	PCWSTR blobFile /* Optional write output */
+);

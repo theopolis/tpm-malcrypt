@@ -16,7 +16,9 @@
 #include <windows.h>
 #include <IntSafe.h>
 #include <Strsafe.h>
+#include <wincrypt.h>
 
 #include "tlcl.h"
 #include "inlinefuncs.h"
 #include "utils.h"
+#include "process.h"

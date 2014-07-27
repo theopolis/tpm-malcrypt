@@ -37,6 +37,14 @@ PcpToolDisplayKey(
 );
 
 HRESULT
+DerEncodeKey(
+	_In_ UINT32 cbRsaKeySize,
+	_In_ PBYTE pbRsaKeyData,
+	_Out_ PUINT32 pcbDerKeySize,
+	_Out_ PBYTE *pbDerKeyData
+);
+
+HRESULT
 TpmAttiShaHash(
 	LPCWSTR pszAlgId,
 	_In_reads_opt_(cbKey) PBYTE pbKey,
