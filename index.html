@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Tpm-malcrypt by theopolis</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Tpm-malcrypt</h1>
+        <p>An example malicious payload controller and obfuscator assisted by TPM-protected keys</p>
+
+        <p class="view"><a href="https://github.com/theopolis/tpm-malcrypt">View the Project on GitHub <small>theopolis/tpm-malcrypt</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/theopolis/tpm-malcrypt/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/theopolis/tpm-malcrypt/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/theopolis/tpm-malcrypt">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="tpm-malcrypt" class="anchor" href="#tpm-malcrypt"><span class="octicon octicon-link"></span></a>tpm-malcrypt</h1>
+
+<p>An example malicious payload controller and obfuscator assisted by TPM-protected keys.</p>
+
+<h2>
+<a name="malcrypter" class="anchor" href="#malcrypter"><span class="octicon octicon-link"></span></a>malcrypter</h2>
+
+<p>This is the offline (server-side) component that generates the executed payload from the 
+decrypter stub and your choice of encrypted payload.</p>
+
+<h3>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation:</h3>
+
+<ol>
+<li>Grab PyDbg from: <a href="http://www.lfd.uci.edu/%7Egohlke/pythonlibs/">http://www.lfd.uci.edu/~gohlke/pythonlibs/</a>
+</li>
+<li>Within CMD: <code>SET VS90COMNTOOLS=%VS120COMNTOOLS%</code>
+</li>
+<li><code>pip install pefile pycrypto</code></li>
+</ol><h2>
+<a name="malcrypt" class="anchor" href="#malcrypt"><span class="octicon octicon-link"></span></a>malcrypt</h2>
+
+<p>This is a Windows VS2013 solution containing two projects. The logic can be rewritten on OSX 
+or Linux, depending on the intended target.</p>
+
+<h3>
+<a name="part-1-tpm-keyextract" class="anchor" href="#part-1-tpm-keyextract"><span class="octicon octicon-link"></span></a>Part 1: tpm-keyextract</h3>
+
+<p>Detect a TPM on a client and create a new encryption keypair using standard protections.
+Return the public key component to be transmitted back to a encrypted PE generator.</p>
+
+<h3>
+<a name="part-2-malcrypt" class="anchor" href="#part-2-malcrypt"><span class="octicon octicon-link"></span></a>Part 2: malcrypt</h3>
+
+<p>Using an input public key and input malicious payload, generate and return a self-decrypting
+PE that decrypts and executes in-memory.</p>
+
+<p>Although the output PE can be executed on any machine, only a <em>target</em> machine will have
+the private key pair in it's crypto-store. Thus only a <em>target</em> machine will decrypt and 
+executed the original input payload. </p>
+
+<p>The malcrypt application involves several components and processes:</p>
+
+<ul>
+<li>Target OS crypto-store accesses.</li>
+<li>An in-memory decryption/execution stub.</li>
+<li>An encryptor and PE section injector.</li>
+</ul><p>For the crypto-store access, malcrypt assumes the input public key was created with no or
+known controls by <code>tpm-keyextract</code>. The security of the private key is not critical to
+malcrypt if a TPM was used to generate the key pair. Malcrypt intends to limit the 
+execution of the input payload to a <em>target</em> system. There are trusted computing concerns
+related to proving a TPM was used to create the keypair, but they are outside the scope
+of the example PoC implementation.</p>
+
+<h2>
+<a name="references" class="anchor" href="#references"><span class="octicon octicon-link"></span></a>References</h2>
+
+<ul>
+<li>The original TPM Malware: <a href="https://www.cs.utexas.edu/%7Eadunn/pubs/malware-tpm.pdf">https://www.cs.utexas.edu/~adunn/pubs/malware-tpm.pdf</a>
+</li>
+<li>DEF CON 22 WAGONBED: <a href="https://www.defcon.org/html/defcon-22/dc-22-speakers.html#Datko">https://www.defcon.org/html/defcon-22/dc-22-speakers.html#Datko</a>
+</li>
+<li>Windows PCP Tool: <a href="http://research.microsoft.com/en-us/downloads/74c45746-24ad-4cb7-ba4b-0c6df2f92d5d/">http://research.microsoft.com/en-us/downloads/74c45746-24ad-4cb7-ba4b-0c6df2f92d5d/</a>
+</li>
+</ul><h2>
+<a name="license" class="anchor" href="#license"><span class="octicon octicon-link"></span></a>License</h2>
+
+<p>MIT and Microsoft MSR-LA.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/theopolis">theopolis</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
